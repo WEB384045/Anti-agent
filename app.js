@@ -101,5 +101,5 @@ app.delete('/listings/:id', (req, res) => {
 
 // --- Start the server ---
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running on https://anti-agent-directrent-api.onrender.com`);
 });
