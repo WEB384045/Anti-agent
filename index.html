@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DirectRent - Tenant to Owner Platform</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 1.5rem;
+        }
+
+        .search-section {
+            padding: 2rem;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .property-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .property-image {
+            height: 200px;
+            background-color: #ddd;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .property-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+        }
+
+        .property-details {
+            padding: 1rem;
+        }
+
+        .price {
+            color: #2c3e50;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-owner {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .list-property-form {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        #image-preview {
+            display: flex;
+            gap: 10px;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        #image-preview img {
+            height: 100px;
+            width: auto;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                display: none;
+            }
+            
+            .property-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="home-page">
+        <header>
+            <div class="logo">DirectRent</div>
+            <nav>
+                <a href="#list-property">List Property</a>
+                <a href="#login">Login</a>
+            </nav>
+        </header>
+
+        <section class="search-section">
+            <h2>Find Properties Directly From Owners</h2>
+            <div class="filters">
+                <select id="property-type">
+                    <option value="rent">For Rent</option>
+                    <option value="sale">For Sale</option>
+                </select>
+                <input type="text" placeholder="Location">
+                <input type="number" placeholder="Min Price">
+                <input type="number" placeholder="Max Price">
+            </div>
+        </section>
+
+        <section class="property-grid" id="property-list">
+            <!-- Property cards will be inserted here by JavaScript -->
+        </section>
+    </div>
+
+    <div id="list-property" style="display: none;">
+        <header>
+            <div class="logo">DirectRent</div>
+            <nav>
+                <a href="#home">Home</a>
+                <a href="#login">Login</a>
+            </nav>
+        </header>
+
+        <form class="list-property-form" onsubmit="handlePropertySubmit(event)">
+            <h2>List Your Property</h2>
+            <div id="image-preview"></div>
+            
+            <div class="form-group">
+                <label>Property Title</label>
+                <input type="text" name="title" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" rows="4" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" name="price" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Location</label>
+                <input type="text" name="location" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Upload Photos</label>
+                <input 
+                    type="file" 
+                    name="images"
+                    multiple 
+                    accept="image/*"
+                    onchange="previewImages(event)"
+                >
+            </div>
+            
+            <button type="submit">Publish Listing</button>
+        </form>
+    </div>
+
+    <script>
+        let properties = [
+            {
+                id: 1,
+                title: "Downtown Studio Apartment",
+                price: 1500,
+                location: "City Center",
+                type: "rent",
+                description: "Modern studio apartment with great amenities",
+                images: []
+            }
+        ];
+
+        function previewImages(event) {
+            const previewContainer = document.getElementById('image-preview');
+            previewContainer.innerHTML = '';
+            
+            const files = event.target.files;
+            if (!files) return;
+            
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handlePropertySubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            // Process images
+            const imageFiles = formData.getAll('images');
+            const imageUrls = await Promise.all(
+                Array.from(imageFiles).map(file => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                })
+            );
+
+            const newProperty = {
+                id: properties.length + 1,
+                title: formData.get('title'),
+                description: formData.get('description'),
+                price: formData.get('price'),
+                location: formData.get('location'),
+                type: 'rent',
+                images: imageUrls
+            };
+
+            properties.push(newProperty);
+            renderProperties();
+            form.reset();
+            document.getElementById('image-preview').innerHTML = '';
+            window.location.hash = '#home';
+        }
+
+        function renderProperties() {
+            const container = document.getElementById('property-list');
+            container.innerHTML = '';
+            
+            properties.forEach(property => {
+                const card = document.createElement('div');
+                card.className = 'property-card';
+                card.innerHTML = `
+                    <div class="property-image">
+                        ${property.images.length ? 
+                            `<img src="${property.images[0]}" alt="${property.title}">` :
+                            `<div class="no-image">No Image Available</div>`
+                        }
+                    </div>
+                    <div class="property-details">
+                        <div class="price">$${property.price}</div>
+                        <h3>${property.title}</h3>
+                        <p>${property.location}</p>
+                        <button class="contact-owner" onclick="contactOwner(${property.id})">
+                            Contact Owner
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function contactOwner(propertyId) {
+            const property = properties.find(p => p.id === propertyId);
+            alert(`Contacting owner of: ${property.title}\nEmail: owner@example.com\nPhone: 555-1234`);
+        }
+
+        window.addEventListener('hashchange', () => {
+            const pages = document.querySelectorAll('[id$="-page"], #list-property');
+            pages.forEach(page => page.style.display = 'none');
+            
+            if(window.location.hash === '#list-property') {
+                document.getElementById('list-property').style.display = 'block';
+            } else {
+                document.getElementById('home-page').style.display = 'block';
+            }
+        });
+
+        // Initial render
+        renderProperties();
+    </script>
+</body>
+</html>
