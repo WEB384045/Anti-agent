@@ -224,17 +224,7 @@
     </div>
 
     <script>
-        let properties = [
-            {
-                id: 1,
-                title: "Downtown Studio Apartment",
-                price: 1500,
-                location: "City Center",
-                type: "rent",
-                description: "Modern studio apartment with great amenities",
-                images: []
-            }
-        ];
+        let properties = [];
 
         function previewImages(event) {
             const previewContainer = document.getElementById('image-preview');
@@ -261,7 +251,6 @@
             const form = event.target;
             const formData = new FormData(form);
             
-            // Process images
             const imageFiles = formData.getAll('images');
             const imageUrls = await Promise.all(
                 Array.from(imageFiles).map(file => {
@@ -274,20 +263,29 @@
             );
 
             const newProperty = {
-                id: properties.length + 1,
                 title: formData.get('title'),
                 description: formData.get('description'),
                 price: formData.get('price'),
                 location: formData.get('location'),
-                type: 'rent',
-                images: imageUrls
+                imageUrl: imageUrls[0] || '' // Only using first image
             };
 
-            properties.push(newProperty);
-            renderProperties();
-            form.reset();
-            document.getElementById('image-preview').innerHTML = '';
-            window.location.hash = '#home';
+            try {
+                const res = await fetch('https://anti-agent-directrent-api.onrender.com/listings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProperty)
+                });
+
+                if (!res.ok) throw new Error('Failed to post listing');
+                await fetchListings();
+                form.reset();
+                document.getElementById('image-preview').innerHTML = '';
+                window.location.hash = '#home';
+            } catch (err) {
+                console.error('Submit failed:', err);
+                alert('Error submitting listing.');
+            }
         }
 
         function renderProperties() {
@@ -299,8 +297,8 @@
                 card.className = 'property-card';
                 card.innerHTML = `
                     <div class="property-image">
-                        ${property.images.length ? 
-                            `<img src="${property.images[0]}" alt="${property.title}">` :
+                        ${property.imageUrl ?
+                            `<img src="${property.imageUrl}" alt="${property.title}">` :
                             `<div class="no-image">No Image Available</div>`
                         }
                     </div>
@@ -322,6 +320,17 @@
             alert(`Contacting owner of: ${property.title}\nEmail: owner@example.com\nPhone: 555-1234`);
         }
 
+        async function fetchListings() {
+            try {
+                const res = await fetch('https://anti-agent-directrent-api.onrender.com/listings');
+                properties = await res.json();
+                renderProperties();
+            } catch (err) {
+                console.error('Failed to load listings:', err);
+                alert('Failed to load properties');
+            }
+        }
+
         window.addEventListener('hashchange', () => {
             const pages = document.querySelectorAll('[id$="-page"], #list-property');
             pages.forEach(page => page.style.display = 'none');
@@ -333,8 +342,8 @@
             }
         });
 
-        // Initial render
-        renderProperties();
+        // Initial load
+        fetchListings();
     </script>
 </body>
 </html>
